@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { getToken } from '../utils/auth';
+import { isAdmin } from '../utils/user';
 
 function UserManagement() {
   const [users, setUsers] = useState([]);
+  const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,12 +31,12 @@ function UserManagement() {
       const res = await fetch('http://localhost:5000/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ username, name, email, password })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to add user');
       setSuccess('User added!');
-      setName(''); setEmail(''); setPassword('');
+      setUsername(''); setName(''); setEmail(''); setPassword('');
     } catch (err) {
       setError(err.message);
     }
@@ -59,14 +61,14 @@ function UserManagement() {
   };
 
   // Only allow access if user is admin
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  if (!user.isAdmin) {
+  if (!isAdmin()) {
     return <div className="text-center text-red-600 mt-10 font-bold">Access denied: Admins only</div>;
   }
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded shadow mt-8">
       <h2 className="text-2xl font-bold mb-4">User Management</h2>
       <form onSubmit={handleAdd} className="mb-6 flex flex-col gap-2">
+        <input className="border p-2 rounded" value={username} onChange={e => setUsername(e.target.value)} placeholder="Username" required />
         <input className="border p-2 rounded" value={name} onChange={e => setName(e.target.value)} placeholder="Name" required />
         <input className="border p-2 rounded" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required />
         <input className="border p-2 rounded" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password" required />
@@ -77,12 +79,13 @@ function UserManagement() {
       <table className="w-full text-left border-separate border-spacing-y-2">
         <thead>
           <tr className="text-gray-500 text-xs uppercase tracking-wider">
-            <th>Name</th><th>Email</th><th>Actions</th>
+            <th>Username</th><th>Name</th><th>Email</th><th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {users.map(u => (
             <tr key={u.id}>
+              <td>{u.username}</td>
               <td>{u.name}</td>
               <td>{u.email}</td>
               <td>

@@ -18,14 +18,17 @@ function requireAuth(req, res, next) {
 }
 
 function requireAdmin(req, res, next) {
-  if (!req.user?.isAdmin) return res.status(403).json({ error: 'Admin only' });
-  next();
+  console.log('Decoded user in requireAdmin:', req.user);
+  if (req.user?.isAdmin === true || req.user?.isAdmin === 1 || req.user?.isAdmin === '1') {
+    return next();
+  }
+  return res.status(403).json({ error: 'Admin only' });
 }
 // --- User Management (admin only) ---
 // List users (admin only)
 router.get('/users', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const [users] = await pool.query('SELECT id, name, email, isAdmin FROM users');
+    const [users] = await pool.query('SELECT id, username, name, email, isAdmin FROM users');
     res.json(users);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -34,14 +37,14 @@ router.get('/users', requireAuth, requireAdmin, async (req, res) => {
 
 // Add user (admin only)
 router.post('/users', requireAuth, requireAdmin, async (req, res) => {
-  const { name, email, password, isAdmin } = req.body;
-  if (!name || !email || !password) return res.status(400).json({ error: 'All fields required' });
+  const { username, name, email, password, isAdmin } = req.body;
+  if (!username || !name || !email || !password) return res.status(400).json({ error: 'All fields required' });
   try {
-    const [users] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
-    if (users.length > 0) return res.status(409).json({ error: 'Email already registered' });
+    const [users] = await pool.query('SELECT id FROM users WHERE email = ? OR username = ?', [email, username]);
+    if (users.length > 0) return res.status(409).json({ error: 'Email or username already registered' });
     const bcrypt = (await import('bcryptjs')).default;
     const hash = await bcrypt.hash(password, 10);
-    await pool.query('INSERT INTO users (name, email, password, isAdmin) VALUES (?, ?, ?, ?)', [name, email, hash, !!isAdmin]);
+    await pool.query('INSERT INTO users (username, name, email, password, isAdmin) VALUES (?, ?, ?, ?, ?)', [username, name, email, hash, !!isAdmin]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to add user' });
