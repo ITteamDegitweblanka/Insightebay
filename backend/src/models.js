@@ -5,6 +5,15 @@ export const createTablesSQL = [
     name VARCHAR(100),
     role VARCHAR(50)
   )`,
+  `CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100) UNIQUE,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    password VARCHAR(255),
+    isAdmin BOOLEAN DEFAULT FALSE,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`,
   `CREATE TABLE IF NOT EXISTS listings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     sku VARCHAR(50),

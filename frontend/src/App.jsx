@@ -5,21 +5,22 @@ import Dashboard from './pages/Dashboard';
 import Reports from './pages/Reports';
 import Segments from './pages/Segments';
 import Login from './pages/Login';
-import Signup from './pages/Signup';
+// import Signup from './pages/Signup';
+import UserManagement from './pages/UserManagement';
 import Sidebar from './components/Sidebar';
 import EmployeePerformance from './pages/EmployeePerformance';
 import { useLocation } from 'react-router-dom';
 
 function App() {
   const location = useLocation();
-  const hideSidebar = location.pathname === '/login' || location.pathname === '/signup';
+  const hideSidebar = location.pathname === '/login';
   return (
     <div className="flex min-h-screen bg-background font-sans">
       {!hideSidebar && <Sidebar />}
       <div className="flex-1 p-4">
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          <Route path="/users" element={<UserManagement />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/employee-performance" element={<EmployeePerformance />} />
           <Route path="/reports" element={<Reports />} />

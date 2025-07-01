@@ -1,6 +1,9 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Home, BarChart, Layers, LogIn } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Home, BarChart, Layers, LogIn, LogOut } from 'lucide-react';
+import { removeToken, isLoggedIn } from '../utils/auth';
+import { isAdmin } from '../utils/user';
+
 
 const navItems = [
   { label: 'Dashboard', icon: <Home size={20} />, path: '/dashboard' },
@@ -11,6 +14,11 @@ const navItems = [
 
 function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    removeToken();
+    navigate('/login');
+  };
   return (
     <aside className="w-16 md:w-56 bg-white shadow h-screen flex flex-col">
       <div className="flex items-center justify-center h-16 font-bold text-primary text-xl border-b gap-2">
@@ -33,9 +41,26 @@ function Sidebar() {
             <span className="hidden md:inline">{item.label}</span>
           </Link>
         ))}
+        {isAdmin() && (
+          <Link
+            to="/users"
+            className={`flex items-center gap-3 px-4 py-2 rounded hover:bg-accent transition-colors ${location.pathname.startsWith('/users') ? 'bg-accent font-semibold' : ''}`}
+          >
+            <Layers size={20} />
+            <span className="hidden md:inline">User Management</span>
+          </Link>
+        )}
       </nav>
       <div className="mt-auto p-4">
-        {/* No logout on sidebar, handled elsewhere if needed */}
+        {isLoggedIn() && (
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 rounded bg-red-50 text-red-600 hover:bg-red-100 w-full font-semibold"
+          >
+            <LogOut size={18} />
+            <span className="hidden md:inline">Logout</span>
+          </button>
+        )}
       </div>
     </aside>
   );

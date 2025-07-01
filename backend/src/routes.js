@@ -2,11 +2,123 @@
 import express from 'express';
 import pool from './db.js';
 const router = express.Router();
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
+
+function requireAuth(req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    req.user = jwt.verify(auth.replace('Bearer ', ''), JWT_SECRET);
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.user?.isAdmin) return res.status(403).json({ error: 'Admin only' });
+  next();
+}
+// --- User Management (admin only) ---
+// List users (admin only)
+router.get('/users', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [users] = await pool.query('SELECT id, name, email, isAdmin FROM users');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Add user (admin only)
+router.post('/users', requireAuth, requireAdmin, async (req, res) => {
+  const { name, email, password, isAdmin } = req.body;
+  if (!name || !email || !password) return res.status(400).json({ error: 'All fields required' });
+  try {
+    const [users] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
+    if (users.length > 0) return res.status(409).json({ error: 'Email already registered' });
+    const bcrypt = (await import('bcryptjs')).default;
+    const hash = await bcrypt.hash(password, 10);
+    await pool.query('INSERT INTO users (name, email, password, isAdmin) VALUES (?, ?, ?, ?)', [name, email, hash, !!isAdmin]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add user' });
+  }
+});
+
+// Delete user (admin only)
+router.delete('/users/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM users WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+
+// ...existing code...
+
+// Signup (admin only, or for initial user creation)
+router.post('/auth/signup', async (req, res) => {
+  const { username, name, email, password } = req.body;
+  if (!username || !name || !password) return res.status(400).json({ error: 'All fields required' });
+  try {
+    const [users] = await pool.query('SELECT id FROM users WHERE username = ?', [username]);
+    if (users.length > 0) return res.status(409).json({ error: 'Username already exists' });
+    const hash = await bcrypt.hash(password, 10);
+    await pool.query('INSERT INTO users (username, name, email, password) VALUES (?, ?, ?, ?)', [username, name, email, hash]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Signup failed' });
+  }
+});
+
+// Login (by username)
+router.post('/auth/login', async (req, res) => {
+  console.log('Login request body:', req.body);
+  const { username, password } = req.body;
+  if (!username || !password) {
+    console.log('Missing username or password');
+    return res.status(400).json({ error: 'All fields required' });
+  }
+  try {
+    const [users] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
+    console.log('User lookup result:', users);
+    if (users.length === 0) {
+      console.log('No user found for username:', username);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    const user = users[0];
+    const match = await bcrypt.compare(password, user.password);
+    console.log('Password match result:', match);
+    if (!match) {
+      console.log('Password did not match for user:', username);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    const token = jwt.sign({ id: user.id, username: user.username, name: user.name, isAdmin: user.isAdmin }, JWT_SECRET, { expiresIn: '1d' });
+    console.log('Login successful for user:', username);
+    res.json({ token, user: { id: user.id, username: user.username, name: user.name, isAdmin: user.isAdmin } });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Logout (client-side: just remove token)
+router.post('/auth/logout', (req, res) => {
+  // No server action needed for JWT logout
+  res.json({ success: true });
+});
+
+
 
 
 
 // Employee performance table API
-router.get('/api/employee/performance', async (req, res) => {
+router.get('/employee/performance', async (req, res) => {
   const days = Number(req.query.days) || 30;
   // Get all employees
   const [employees] = await pool.query('SELECT id, name FROM employees');
