@@ -1,0 +1,43 @@
+# Node.js
+node_modules/
+.env
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+logs
+*.log
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Build output
+dist/
+build/
+
+# VS Code
+.vscode/
+
+# Misc
+*.tgz
+*.swp
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Backend
+backend/node_modules/
+backend/dist/
+
+# Coverage
+coverage/
+
+# Local environment
+.env.*
+
+# UI design
+ui design/*.tmp
