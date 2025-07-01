@@ -45,7 +45,34 @@ function EmployeeRevenueChart({ data: propData, onRangeChange }) {
         <BarChart data={data} barGap={8}>
           <XAxis dataKey="name" tick={{ fontSize: 13 }} />
           <YAxis tickFormatter={v => `$${v/1000}k`} />
-          <Tooltip formatter={(v, n) => [`$${v.toLocaleString()}`, n === 'revenue' ? 'Current' : 'Previous']} />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (!active || !payload || !payload.length) return null;
+              return (
+                <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, boxShadow: '0 2px 8px #0001' }}>
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>{label}</div>
+                  {payload.map((entry, idx) => {
+                    const isPrev = entry.dataKey === 'prevRevenue';
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          color: isPrev ? '#1e293b' : '#2563eb',
+                          fontWeight: isPrev ? 700 : 500,
+                          fontSize: 15,
+                          marginBottom: 2,
+                          opacity: isPrev ? 0.4 : 1 // 40% visibility for previous
+                        }}
+                      >
+                        <span style={{ marginRight: 8 }}>{entry.name}:</span>
+                        <span>{`$${entry.value.toLocaleString()}`}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            }}
+          />
           <Legend />
           <Bar dataKey="revenue" name="Current" fill="#2563eb" radius={[6,6,0,0]} barSize={32} />
           <Bar dataKey="prevRevenue" name="Previous" fill="#dbeafe" radius={[6,6,0,0]} barSize={32} />
