@@ -6,10 +6,18 @@ function SoldListingsTable() {
   const [selected, setSelected] = useState("30D");
   const [data, setData] = useState({ totals: {}, rows: [] });
 
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
   useEffect(() => {
     // Map range to days
     const rangeToDays = { '7D': 7, '15D': 15, '30D': 30, '90D': 90 };
     const days = rangeToDays[selected] || 30;
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - days + 1);
+    setDateRange({
+      start: startDate.toISOString().slice(0, 10),
+      end: endDate.toISOString().slice(0, 10)
+    });
     fetch(`http://localhost:5000/api/sales/sold?days=${days}`)
       .then(res => res.json())
       .then(rows => {
@@ -22,6 +30,7 @@ function SoldListingsTable() {
           totals.sales += salesAmount;
           return {
             id: row.listingId,
+            segment: row.segment,
             soldQty: Number(row.quantity || row.soldQty || 0),
             soldQtyChange: Number(row.soldQtyChange ?? 0),
             orders: Number(row.orders || 0),
@@ -49,6 +58,7 @@ function SoldListingsTable() {
             </span>
           </h2>
           <p className="text-gray-500 text-sm">Overview of recently sold items. Click a row for details.</p>
+          <div className="text-xs text-gray-600 mt-2">Showing data from <span className="font-semibold">{dateRange.start}</span> to <span className="font-semibold">{dateRange.end}</span></div>
         </div>
         <div className="flex gap-2 flex-wrap">
           {ranges.map(r => (
@@ -65,6 +75,7 @@ function SoldListingsTable() {
           <thead>
             <tr className="text-gray-500 text-xs uppercase tracking-wider">
               <th className="py-3 px-4">Item ID</th>
+             <th className="py-3 px-4">Segment</th>
               <th className="py-3 px-4">Sold Qty</th>
               <th className="py-3 px-4">Orders</th>
               <th className="py-3 px-4">Sales</th>
@@ -75,6 +86,7 @@ function SoldListingsTable() {
           <tbody>
             <tr className="bg-primary/5 font-bold rounded-2xl text-primary">
               <td className="px-4 py-3">Totals</td>
+              <td className="px-4 py-3">-</td>
               <td className="px-4 py-3">{data.totals.soldQty}</td>
               <td className="px-4 py-3">{data.totals.orders}</td>
               <td className="px-4 py-3">${Number(data.totals.sales || 0).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
@@ -84,6 +96,9 @@ function SoldListingsTable() {
             {data.rows.map(row => (
               <tr key={row.id} className="group hover:bg-blue-50/60 cursor-pointer transition rounded-2xl shadow-sm border border-transparent hover:border-blue-200" tabIndex={0} title="Click for details" style={{ borderRadius: '16px' }}>
                 <td className="py-3 px-4 font-semibold group-hover:text-primary transition-colors align-middle">{row.id}</td>
+                <td className="py-3 px-4 align-middle">
+                  <span className="inline-block bg-purple-50 text-purple-700 px-2 py-1 rounded-full text-xs font-bold shadow-sm">{row.segment || '-'}</span>
+                </td>
                 <td className="py-3 px-4 align-middle">
                   <span className="inline-block bg-green-50 text-green-700 px-2 py-1 rounded-full text-xs font-bold shadow-sm">{row.soldQty}</span>
                   <span className={`ml-2 text-xs font-semibold ${row.soldQtyChange > 0 ? 'text-green-600' : row.soldQtyChange < 0 ? 'text-red-600' : 'text-gray-400'}`}> 

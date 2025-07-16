@@ -340,12 +340,28 @@ router.get('/sales/sold', async (req, res) => {
       if (prev == null || prev === 0) return curr ? 100 : 0;
       return ((curr - prev) / Math.abs(prev) * 100).toFixed(1);
     }
+    // Segment logic: classify listing performance (percentage-based)
+    const impressions = Number(currMetrics.impressions || 0);
+    const clicks = Number(currMetrics.clicks || 0);
+    const sales = Number(row.salesAmount || 0);
+    let segment = 'Dead';
+    if (impressions === 0 || clicks === 0) segment = 'Dead';
+    else if (impressions > 0 && clicks > 0 && sales === 0) segment = 'Poor';
+    else {
+      // Use percentage of sales vs impressions as performance metric
+      // If impressions is 0, avoid division by zero
+      let performance = impressions > 0 ? (sales / impressions) * 100 : 0;
+      if (performance < 25) segment = 'Low';
+      else if (performance < 50) segment = 'Medium';
+      else segment = 'Good';
+    }
     return {
       ...row,
-      impressions: Number(currMetrics.impressions || 0),
-      impressionsChange: Number(pctChange(currMetrics.impressions || 0, prevMetrics.impressions || 0)),
-      clicks: Number(currMetrics.clicks || 0),
-      clicksChange: Number(pctChange(currMetrics.clicks || 0, prevMetrics.clicks || 0)),
+      segment,
+      impressions: impressions,
+      impressionsChange: Number(pctChange(impressions, prevMetrics.impressions || 0)),
+      clicks: clicks,
+      clicksChange: Number(pctChange(clicks, prevMetrics.clicks || 0)),
       soldQtyChange: Number(pctChange(row.quantity || 0, prev.quantity || 0)),
       ordersChange: Number(pctChange(row.orders || 0, prev.orders || 0)),
       salesChange: Number(pctChange(row.salesAmount || 0, prev.salesAmount || 0)),
@@ -378,7 +394,7 @@ router.get('/dashboard/summary', async (req, res) => {
     FROM listing_metrics lm
     ${dateFilter}
   `, params);
-  // Top 10 listings by revenue with date filter
+  // Top 10 listings by revenue with date filter, and revenue change vs previous period
   const [topListings] = await pool.query(`
     SELECT l.id, l.title, SUM(lm.revenue) as revenue, SUM(lm.sales) as orders, ROUND(100 * SUM(lm.clicks) / NULLIF(SUM(lm.impressions),0), 2) as ctr
     FROM listings l
@@ -388,6 +404,26 @@ router.get('/dashboard/summary', async (req, res) => {
     ORDER BY revenue DESC
     LIMIT 10
   `, params);
+
+  // Calculate revenue change for each listing (current vs previous period)
+  let prevListings = [];
+  if (useDays) {
+    // Previous period: same length, immediately before current
+    prevListings = await pool.query(`
+      SELECT l.id, SUM(lm.revenue) as revenue
+      FROM listings l
+      LEFT JOIN listing_metrics lm ON l.id = lm.listingId
+      WHERE lm.date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+        AND lm.date < DATE_SUB(CURDATE(), INTERVAL ? DAY)
+      GROUP BY l.id
+    `, [useDays * 2, useDays]);
+    prevListings = prevListings[0] || [];
+  }
+  const prevMap = {};
+  prevListings.forEach(l => { prevMap[l.id] = Number(l.revenue || 0); });
+  topListings.forEach(l => {
+    l.revenueChange = typeof prevMap[l.id] === 'number' ? Number(l.revenue) - prevMap[l.id] : 0;
+  });
 
   // Employee revenue for current and previous period
   let empRevenueCurrent = [], empRevenuePrev = [];

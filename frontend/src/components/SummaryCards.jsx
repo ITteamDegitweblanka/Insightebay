@@ -8,7 +8,7 @@ function SummaryCards({ data }) {
         <span className="text-2xl font-bold text-primary">${data?.revenue ?? 0}</span>
       </div>
       <div className="bg-white rounded shadow p-4 flex flex-col items-center">
-        <span className="text-lg font-semibold">Total Orders</span>
+        <span className="text-lg font-semibold">Total Orders</span> 
         <span className="text-2xl font-bold text-primary">{data?.orders ?? 0}</span>
       </div>
       <div className="bg-white rounded shadow p-4 flex flex-col items-center">

@@ -55,7 +55,7 @@ function Sidebar() {
         {isLoggedIn() && (
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 rounded bg-red-50 text-red-600 hover:bg-red-100 w-full font-semibold"
+            className="flex items-center gap-3 px-4 py-2 rounded hover:bg-accent transition-colors w-full font-semibold text-gray-700"
           >
             <LogOut size={18} />
             <span className="hidden md:inline">Logout</span>

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
+import ListingDetailsModal from './ListingDetailsModal';
 
 function TopListingsTable({ listings }) {
+  const [selected, setSelected] = useState(null);
   if (!listings) return null;
   return (
     <div className="bg-white rounded-xl shadow p-6 mt-6">
@@ -18,12 +20,21 @@ function TopListingsTable({ listings }) {
           </thead>
           <tbody>
             {listings.map(listing => (
-              <tr key={listing.id} className="hover:bg-accent cursor-pointer transition">
+              <tr key={listing.id} className="hover:bg-accent cursor-pointer transition" onClick={() => setSelected(listing)}>
                 <td className="py-2">
                   <div className="font-semibold">{listing.title}</div>
                   <div className="text-xs text-gray-400">ID: {listing.id}</div>
                 </td>
-                <td className="py-2">${Number(listing.revenue).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td className="py-2">
+                  <div className={`font-semibold ${listing.revenueChange > 0 ? 'text-green-600' : listing.revenueChange < 0 ? 'text-red-500' : ''}`}>${Number(listing.revenue).toLocaleString(undefined, {minimumFractionDigits:2})}
+                    {typeof listing.revenueChange === 'number' && (
+                      <span className={`ml-2 text-xs font-bold ${listing.revenueChange > 0 ? 'text-green-600' : listing.revenueChange < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                        {listing.revenueChange > 0 ? '▲' : listing.revenueChange < 0 ? '▼' : ''}
+                        {listing.revenueChange !== 0 ? ` ${Math.abs(listing.revenueChange).toLocaleString(undefined, {minimumFractionDigits:2})}` : ''}
+                      </span>
+                    )}
+                  </div>
+                </td>
                 <td className="py-2">{listing.orders}</td>
                 <td className="py-2">
                   <span className="bg-blue-50 text-primary px-2 py-1 rounded text-xs font-semibold">
@@ -35,6 +46,7 @@ function TopListingsTable({ listings }) {
           </tbody>
         </table>
       </div>
+      <ListingDetailsModal listing={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }

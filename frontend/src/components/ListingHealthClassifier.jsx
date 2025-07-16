@@ -6,7 +6,7 @@ function classifyHealth(impressions, clicks, sales) {
   if (sales > 0) return { label: 'Good', color: 'bg-green-100 text-green-700' };
   return { label: 'Unknown', color: 'bg-gray-100 text-gray-500' };
 }
-
+ 
 export default function ListingHealthClassifier() {
   const [inputs, setInputs] = useState({ impressions: '', clicks: '', sales: '' });
   const { label, color } = classifyHealth(Number(inputs.impressions), Number(inputs.clicks), Number(inputs.sales));
@@ -17,7 +17,7 @@ export default function ListingHealthClassifier() {
       <p className="text-gray-500 text-sm mb-4">Use AI to classify listing health based on performance metrics.</p>
       <form className="flex flex-col md:flex-row gap-4 items-end">
         <div>
-          <label className="block text-sm font-medium mb-1">Impressions</label>
+          <label className="block text-sm font-medium mb-1">Impressions</label> 
           <input type="number" className="border rounded p-2 w-32" value={inputs.impressions} onChange={e => setInputs({ ...inputs, impressions: e.target.value })} />
         </div>
         <div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import EmployeeDetailsModal from '../components/EmployeeDetailsModal';
 
 const ranges = [
   { label: '7D', days: 7 },
@@ -16,10 +17,19 @@ export default function EmployeePerformance() {
   const [selected, setSelected] = useState('30D');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
   useEffect(() => {
     setLoading(true);
     const days = ranges.find(r => r.label === selected)?.days || 30;
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - days + 1);
+    setDateRange({
+      start: startDate.toISOString().slice(0, 10),
+      end: endDate.toISOString().slice(0, 10)
+    });
     fetch(`http://localhost:5000/api/employee/performance?days=${days}`)
       .then(res => res.json())
       .then(rows => {
@@ -37,6 +47,7 @@ export default function EmployeePerformance() {
             <div>
               <h2 className="text-2xl font-bold mb-1">Employee Revenue Details</h2>
               <p className="text-gray-500 text-sm">Revenue and performance by employee. Click a row for details.</p>
+              <div className="text-xs text-gray-600 mt-2">Showing data from <span className="font-semibold">{dateRange.start}</span> to <span className="font-semibold">{dateRange.end}</span></div>
             </div>
             <div className="flex gap-2 flex-wrap">
               {ranges.map(r => (
@@ -67,7 +78,8 @@ export default function EmployeePerformance() {
                 ) : data.map(emp => {
                   const pct = percentChange(emp.totalRevenue, emp.prevTotalRevenue);
                   return (
-                    <tr key={emp.id} className="group hover:bg-blue-50/60 cursor-pointer transition rounded-2xl shadow-sm border border-transparent hover:border-blue-200" tabIndex={0}>
+                    <tr key={emp.id} className="group hover:bg-accent cursor-pointer transition rounded-2xl shadow-sm border border-transparent hover:border-blue-200" tabIndex={0}
+                      onClick={() => setSelectedEmployee(emp)}>
                       <td className="py-3 px-4 font-semibold flex items-center gap-3 align-middle">
                         <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-primary font-bold text-base uppercase">{emp.initials}</span>
                         {emp.name}
@@ -83,6 +95,7 @@ export default function EmployeePerformance() {
             </table>
           </div>
         </div>
+        <EmployeeDetailsModal employee={selectedEmployee} onClose={() => setSelectedEmployee(null)} />
       </div>
     </div>
   );
